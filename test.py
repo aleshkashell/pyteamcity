@@ -1,5 +1,8 @@
 from pyteamcity import TeamCity
+import json
 
+def jprint(*args):
+    print(json.dumps(args, indent=4))
 if __name__=='__main__':
     teamcityUser = 'admin'
     teamcityPassword = 'iniT1234'
@@ -9,4 +12,5 @@ if __name__=='__main__':
 
     myApp = TeamCity(username=teamcityUser, password=teamcityPassword, server=teamcityServer, port=teamcityPort,
                      protocol=teamcityProtocol)
-    print(myApp.base_url)
+    print(myApp.create_project("test project 2"))
+    print(myApp.create_group("test group 2"))
