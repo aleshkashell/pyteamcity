@@ -59,6 +59,9 @@ def _build_url(*args, **kwargs):
     parts = [str(p) for p in parts]
     return '/'.join(parts)
 
+def _list_for_parent(*args):
+    return [{"key": group} for group in args]
+
 
 def get_default_kwargs(func):
     """Returns a sequence of tuples (kwarg_name, default_value) for func"""
@@ -638,7 +641,7 @@ class TeamCity:
             url=url,
             auth=(self.username, self.password),
             data=str(counter))
-    def set_parent_group(self, child_group, parent_group):
+    def set_parent_group(self, child_group, *args):
         """
 
         :param child_group:
@@ -652,11 +655,11 @@ class TeamCity:
         headers = {'Content-Type': 'application/json'}
         response = self.session.put(
             url=url,
-            data=str('{"count": 1, "group": [{"key": "TEST_GROUP", "name": "test group", "href": "/httpAuth/app/rest/userGroups/key:TEST_GROUP"}]}'),
+            json={"group": _list_for_parent(*args)},
             headers=headers
         )
-        print(response.url)
-        print(response.content)
+        if (response.status_code != 200):
+            print(response.text)
         return response
     @GET('userGroups/{child_group}/parent-groups')
     def get_parent_groups(self, child_group):

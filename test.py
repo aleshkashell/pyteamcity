@@ -13,4 +13,4 @@ if __name__=='__main__':
     myApp = TeamCity(username=teamcityUser, password=teamcityPassword, server=teamcityServer, port=teamcityPort,
                      protocol=teamcityProtocol)
     print(myApp.get_parent_groups("TEST_GROUP_2"))
-    print(myApp.set_parent_group("TEST_GROUP_2", "hello"))
+    print(myApp.set_parent_group("TEST_GROUP_2", "ALL_USERS_GROUP", "TEST_GROUP"))
