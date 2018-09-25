@@ -73,6 +73,9 @@ def _create_group_id(group_name):
             return fit_id
     return new_id
 
+def _create_project_id(project_name):
+    return project_name.replace(' ', '')
+
 def get_default_kwargs(func):
     """Returns a sequence of tuples (kwarg_name, default_value) for func"""
     argspec = inspect.getargspec(func)
@@ -168,6 +171,7 @@ class TeamCity:
         self._agent_cache = {}
         self.help_groups = ['Admins', 'Developers']
         self.all_users_group = "ALL_USERS_GROUP"
+        self.available_roles = ['PROJECT_DEVELOPER', 'PROJECT_ADMIN', 'PROJECT_VIEWER']
 
     def get_url(self, path):
         return '/'.join([self.base_base_url, path])
@@ -713,3 +717,35 @@ class TeamCity:
         for group in self._get_help_groups(group_name):
             self.set_parent_group(_create_group_id(group), main_group_id)
         self.set_parent_group(main_group_id, self.all_users_group)
+
+    def assign_role_by_id(self, group_id, project_id, role='PROJECT_VIEWER'):
+        url = _build_url('userGroups',
+                         '{group_id}'.format(group_id=group_id),
+                         'roles',
+                         base_url=self.base_url)
+        headers = {'Content-Type': 'application/json'}
+        response = self.session.put(
+            url=url,
+            json={"role":[{"roleId":role,"scope":"p:{project_id}".format(project_id=project_id)}]},
+            headers=headers
+        )
+        if (response.status_code != 200):
+            print(response.text, file=sys.stderr)
+        return response
+    def assign_role(self, group_name, project_name, role='PROJECT_VIEWER'):
+
+        if role not in self.available_roles:
+            role = 'PROJECT_VIEWER'
+        return self.assign_role_by_id(_create_group_id(group_name), _create_project_id(project_name), role=role)
+    def assign_default_roles(self, project_name):
+        project_id = _create_project_id(project_name)
+        # Main group
+        self.assign_role_by_id(_create_group_id(project_name), project_id, 'PROJECT_VIEWER')
+        # Help groups
+        for group in self._get_help_groups(project_name):
+            if 'Admin' in group:
+                self.assign_role_by_id(_create_group_id(group), project_id, 'PROJECT_ADMIN')
+            elif 'Developer' in group:
+                self.assign_role_by_id(_create_group_id(group), project_id, 'PROJECT_DEVELOPER')
+            else:
+                self.assign_role_by_id(_create_group_id(group), project_id, 'PROJECT_VIEWER')

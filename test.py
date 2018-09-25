@@ -1,16 +1,21 @@
 from pyteamcity import TeamCity
 import json
-
+import sys
 def jprint(*args):
     print(json.dumps(args, indent=4))
 
 def plan(tc, project_name):
+    if (len(project_name.replace(' ', ''))) > 15:
+        print("Name of project too long", file=sys.stderr)
+        return
     #Create project
     tc.create_project(project_name)
     #Create groups
     tc.create_groups_for_project(project_name)
     #Create hierarchy
     tc.set_parent_hierarchy(project_name)
+    #Assign roles
+    tc.assign_default_roles(project_name)
 
 if __name__=='__main__':
     teamcityUser = 'admin'
@@ -23,5 +28,7 @@ if __name__=='__main__':
                      protocol=teamcityProtocol)
 
     #Generate names
-    project_name = "My Super Project"
+    project_name = "Other Project"
+    group_name = 'test group'
     plan(tc, project_name)
+    #print(tc.assign_role(group_name=group_name, project_name=project_name, role='PROJECT_VIEWER'))
