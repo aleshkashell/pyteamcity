@@ -455,8 +455,6 @@ class TeamCity:
         headers = {'Content-Type': 'application/json',
                    'Accept': 'application/json'}
         response = self.session.post(url, json=data, headers=headers)
-        print(response.request.headers)
-        print(response.headers)
         if (response.status_code != 200):
             print(response.text)
         return response
@@ -640,7 +638,29 @@ class TeamCity:
             url=url,
             auth=(self.username, self.password),
             data=str(counter))
+    def set_parent_group(self, child_group, parent_group):
+        """
 
+        :param child_group:
+        :param parent_group:
+        :return:
+        """
+        url = _build_url('userGroups',
+                         '{child_group}'.format(child_group=child_group),
+                         'parent-groups',
+                         base_url=self.base_url)
+        headers = {'Content-Type': 'application/json'}
+        response = self.session.put(
+            url=url,
+            data=str('{"count": 1, "group": [{"key": "TEST_GROUP", "name": "test group", "href": "/httpAuth/app/rest/userGroups/key:TEST_GROUP"}]}'),
+            headers=headers
+        )
+        print(response.url)
+        print(response.content)
+        return response
+    @GET('userGroups/{child_group}/parent-groups')
+    def get_parent_groups(self, child_group):
+        """"""
     @GET('testOccurrences?locator=test:{test_locator}')
     def get_test(self, test_locator):
         """
@@ -660,8 +680,6 @@ class TeamCity:
         headers = {'Content-Type': 'application/json',
                    'Accept': 'application/json'}
         response = self.session.post(url=url,  json=data, headers=headers)
-        print(response.request.headers)
-        print(response.headers)
         if(response.status_code != 200):
             print(response.text)
         return response
