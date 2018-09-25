@@ -17,6 +17,7 @@ import re
 import textwrap
 import xml.etree.ElementTree as ET
 from http import cookiejar  # Python 2: import cookielib as cookiejar
+import sys
 class BlockAll(cookiejar.CookiePolicy):
     return_ok = set_ok = domain_return_ok = path_return_ok = lambda self, *args, **kwargs: False
     netscape = True
@@ -62,6 +63,15 @@ def _build_url(*args, **kwargs):
 def _list_for_parent(*args):
     return [{"key": group} for group in args]
 
+def _create_group_id(group_name):
+    new_id = group_name.upper().replace(' ', '_')
+    if len(new_id) > 16:
+        fit_id = new_id.replace('_', '')
+        if len(fit_id) > 16:
+            return fit_id[:16]
+        else:
+            return fit_id
+    return new_id
 
 def get_default_kwargs(func):
     """Returns a sequence of tuples (kwarg_name, default_value) for func"""
@@ -156,6 +166,8 @@ class TeamCity:
         self.session.auth = self.auth
         self.session.cookies.set_policy(BlockAll())
         self._agent_cache = {}
+        self.help_groups = ['Admins', 'Developers']
+        self.all_users_group = "ALL_USERS_GROUP"
 
     def get_url(self, path):
         return '/'.join([self.base_base_url, path])
@@ -191,6 +203,9 @@ class TeamCity:
                 self.error_handler(new_exception)
             else:
                 raise new_exception
+
+    def _get_help_groups(self, project_name):
+        return [project_name + ' ' + group for group in self.help_groups]
 
     @GET('server')
     def get_server_info(self):
@@ -459,7 +474,7 @@ class TeamCity:
                    'Accept': 'application/json'}
         response = self.session.post(url, json=data, headers=headers)
         if (response.status_code != 200):
-            print(response.text)
+            print(response.text, file=sys.stderr)
         return response
 
     @GET('projects/id:{project_id}')
@@ -659,7 +674,7 @@ class TeamCity:
             headers=headers
         )
         if (response.status_code != 200):
-            print(response.text)
+            print(response.text, file=sys.stderr)
         return response
     @GET('userGroups/{child_group}/parent-groups')
     def get_parent_groups(self, child_group):
@@ -679,10 +694,22 @@ class TeamCity:
         """
         url = _build_url('userGroups', base_url=self.base_url)
         data = {'name': name,
-                'key': name.upper().replace(' ', '_')}
+                'key': _create_group_id(name)}
         headers = {'Content-Type': 'application/json',
                    'Accept': 'application/json'}
         response = self.session.post(url=url,  json=data, headers=headers)
         if(response.status_code != 200):
-            print(response.text)
+            print(response.text, file=sys.stderr)
         return response
+    def create_groups_for_project(self, project_name):
+        self.create_group(project_name)
+        for group in self._get_help_groups(project_name):
+            if(self.create_group(group).ok):
+                print("Created {}".format(group))
+            else:
+                print('"{}" was not created'.format(group), file=sys.stderr)
+    def set_parent_hierarchy(self, group_name):
+        main_group_id = _create_group_id(group_name)
+        for group in self._get_help_groups(group_name):
+            self.set_parent_group(_create_group_id(group), main_group_id)
+        self.set_parent_group(main_group_id, self.all_users_group)

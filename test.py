@@ -3,6 +3,15 @@ import json
 
 def jprint(*args):
     print(json.dumps(args, indent=4))
+
+def plan(tc, project_name):
+    #Create project
+    tc.create_project(project_name)
+    #Create groups
+    tc.create_groups_for_project(project_name)
+    #Create hierarchy
+    tc.set_parent_hierarchy(project_name)
+
 if __name__=='__main__':
     teamcityUser = 'admin'
     teamcityPassword = 'iniT1234'
@@ -10,7 +19,9 @@ if __name__=='__main__':
     teamcityPort = 8111
     teamcityProtocol = 'http'
 
-    myApp = TeamCity(username=teamcityUser, password=teamcityPassword, server=teamcityServer, port=teamcityPort,
+    tc = TeamCity(username=teamcityUser, password=teamcityPassword, server=teamcityServer, port=teamcityPort,
                      protocol=teamcityProtocol)
-    print(myApp.get_parent_groups("TEST_GROUP_2"))
-    print(myApp.set_parent_group("TEST_GROUP_2", "ALL_USERS_GROUP", "TEST_GROUP"))
+
+    #Generate names
+    project_name = "My Super Project"
+    plan(tc, project_name)

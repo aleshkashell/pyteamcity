@@ -1,0 +1,18 @@
+# Get names
+{ project_name }
+# Create project { project_name }
+# Create groups
+    for name in ['', ' Admins', ' Developers']
+        create { project_name } + name
+# Set parents
+    { project_name }                - All Users
+    { project_name } Admins         - { project_name }
+    { project_name } Developers     - { project_name }
+# Set roles for groups
+    { project_name }                - Project viewer
+    { project_name } Admins         - Project administrator
+    { project_name } Developers     - Project developer
+
+# Set mapping group in file
+# Set group in ipa
+# Sync group
