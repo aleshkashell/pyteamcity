@@ -1,6 +1,8 @@
 from pyteamcity import TeamCity
 import json
 import sys
+import logging
+logging.basicConfig(format = u'%(filename)s[LINE:%(lineno)d]# %(levelname)-8s [%(asctime)s]  %(message)s', level = logging.DEBUG)
 def jprint(*args):
     print(json.dumps(args, indent=4))
 
@@ -28,7 +30,8 @@ if __name__=='__main__':
                      protocol=teamcityProtocol)
 
     #Generate names
-    project_name = "Other Project"
-    group_name = 'test group'
+    project_name = "BA Arena"
     plan(tc, project_name)
+
+    #plan(tc, project_name)
     #print(tc.assign_role(group_name=group_name, project_name=project_name, role='PROJECT_VIEWER'))

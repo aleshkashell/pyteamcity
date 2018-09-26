@@ -18,6 +18,7 @@ import textwrap
 import xml.etree.ElementTree as ET
 from http import cookiejar  # Python 2: import cookielib as cookiejar
 import sys
+import logging
 class BlockAll(cookiejar.CookiePolicy):
     return_ok = set_ok = domain_return_ok = path_return_ok = lambda self, *args, **kwargs: False
     netscape = True
@@ -46,6 +47,10 @@ class HTTPError(Exception):
         self.url = url
         self.status_code = status_code
 
+#logging.basicConfig(level = logging.DEBUG)
+
+logger = logging.getLogger("teamcity")
+#logger.setLevel(logging.INFO)
 
 def _underscore_to_camel_case(s):
     words = s.split('_')
@@ -478,7 +483,10 @@ class TeamCity:
                    'Accept': 'application/json'}
         response = self.session.post(url, json=data, headers=headers)
         if (response.status_code != 200):
-            print(response.text, file=sys.stderr)
+            logger.debug(response.text)
+            logger.error('Error create project {}'.format(name))
+        else:
+            logger.info('Project {} was created'.format(name))
         return response
 
     @GET('projects/id:{project_id}')
@@ -678,7 +686,8 @@ class TeamCity:
             headers=headers
         )
         if (response.status_code != 200):
-            print(response.text, file=sys.stderr)
+            logger.debug(response.text)
+            logger.error('Error set parent group for {child_group}'.format(child_group=child_group))
         return response
     @GET('userGroups/{child_group}/parent-groups')
     def get_parent_groups(self, child_group):
@@ -703,19 +712,26 @@ class TeamCity:
                    'Accept': 'application/json'}
         response = self.session.post(url=url,  json=data, headers=headers)
         if(response.status_code != 200):
-            print(response.text, file=sys.stderr)
+            logger.debug(response.text)
+            logger.error('Error create group {}'.format(name))
         return response
     def create_groups_for_project(self, project_name):
-        self.create_group(project_name)
+        if(self.create_group(project_name).ok):
+            logger.info('Group "{}" was created'.format(project_name))
+        else:
+            logger.error('Group "{}" was not created'.format(project_name))
         for group in self._get_help_groups(project_name):
             if(self.create_group(group).ok):
-                print("Created {}".format(group))
+                logger.info('Group "{}" was created'.format(group))
             else:
-                print('"{}" was not created'.format(group), file=sys.stderr)
+                logger.error('Group "{}" was not created'.format(group))
     def set_parent_hierarchy(self, group_name):
         main_group_id = _create_group_id(group_name)
         for group in self._get_help_groups(group_name):
-            self.set_parent_group(_create_group_id(group), main_group_id)
+            if(self.set_parent_group(_create_group_id(group), main_group_id).ok):
+                logger.info('"{}" set parent for "{}"'.format(main_group_id, _create_group_id(group)))
+            else:
+                logger.error('Can\'t set parent for "{}"'.format(_create_group_id(group)))
         self.set_parent_group(main_group_id, self.all_users_group)
 
     def assign_role_by_id(self, group_id, project_id, role='PROJECT_VIEWER'):
@@ -730,13 +746,17 @@ class TeamCity:
             headers=headers
         )
         if (response.status_code != 200):
-            print(response.text, file=sys.stderr)
+            logger.debug(response.text)
+            logger.error('Error assign {role} for {project_id} to {group_id}'.format(role=role, project_id=project_id, group_id=group_id))
+        else:
+            logger.info('Assign {role} for {project_id} to {group_id}'.format(role=role, project_id=project_id, group_id=group_id))
         return response
     def assign_role(self, group_name, project_name, role='PROJECT_VIEWER'):
 
         if role not in self.available_roles:
             role = 'PROJECT_VIEWER'
-        return self.assign_role_by_id(_create_group_id(group_name), _create_project_id(project_name), role=role)
+        response = self.assign_role_by_id(_create_group_id(group_name), _create_project_id(project_name), role=role)
+        return response
     def assign_default_roles(self, project_name):
         project_id = _create_project_id(project_name)
         # Main group
