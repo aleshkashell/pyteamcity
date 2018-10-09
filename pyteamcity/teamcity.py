@@ -216,6 +216,13 @@ class TeamCity:
     def _get_help_groups(self, project_name):
         return [project_name + ' ' + group for group in self.help_groups]
 
+    def get_groups_id(self, project_name):
+        groups_id = []
+        groups_id.append(_create_group_id(project_name))
+        for group in self._get_help_groups(project_name):
+            groups_id.append(_create_group_id(group))
+        return groups_id
+
     @GET('server')
     def get_server_info(self):
         """
@@ -484,9 +491,9 @@ class TeamCity:
         response = self.session.post(url, json=data, headers=headers)
         if (response.status_code != 200):
             logger.debug(response.text)
-            logger.error('Error create project {}'.format(name))
+            logger.error('Error create project "{}"'.format(name))
         else:
-            logger.info('Project {} was created'.format(name))
+            logger.info('Project "{}" was created'.format(name))
         return response
 
     @GET('projects/id:{project_id}')
@@ -769,3 +776,8 @@ class TeamCity:
                 self.assign_role_by_id(_create_group_id(group), project_id, 'PROJECT_DEVELOPER')
             else:
                 self.assign_role_by_id(_create_group_id(group), project_id, 'PROJECT_VIEWER')
+    def get_group_names(self, project_name):
+        result = {}
+        result['main'] = project_name
+        result['helps'] = self._get_help_groups(project_name)
+        return result
