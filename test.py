@@ -2,7 +2,11 @@ from pyteamcity import TeamCity
 import json
 import sys
 import logging
-logging.basicConfig(format = u'%(filename)s[LINE:%(lineno)d]# %(levelname)-8s [%(asctime)s]  %(message)s', level = logging.DEBUG)
+import argparse
+from pylineinfile import lineinfile
+logging.basicConfig(format = u'%(filename)s[LINE:%(lineno)d]# %(levelname)-8s [%(asctime)s]  %(message)s', level = logging.INFO)
+
+
 def jprint(*args):
     print(json.dumps(args, indent=4))
 
@@ -20,18 +24,21 @@ def plan(tc, project_name):
     tc.assign_default_roles(project_name)
 
 if __name__=='__main__':
-    teamcityUser = 'admin'
-    teamcityPassword = 'iniT1234'
-    teamcityServer = '127.0.0.1'
-    teamcityPort = 8111
-    teamcityProtocol = 'http'
+    parser = argparse.ArgumentParser()
+    parser.add_argument('--tcuser', action='store', type=str, default='admin')
+    parser.add_argument('--tcpass', action='store', type=str, default='iniT1234')
+    parser.add_argument('--tchost', action='store', type=str, default='127.0.0.1')
+    parser.add_argument('--tcport', action='store', type=int, default=8111)
+    parser.add_argument('--tcprotocol', action='store', type=str, default='http')
+    parser.add_argument('--project_name', action='store', type=str, default='http')
 
-    tc = TeamCity(username=teamcityUser, password=teamcityPassword, server=teamcityServer, port=teamcityPort,
-                     protocol=teamcityProtocol)
+    parameters = parser.parse_args()
+
+    tc = TeamCity(username=parameters.tcuser, password=parameters.tcpass, server=parameters.tchost,
+                  port=parameters.tcport, protocol=parameters.tcprotocol)
 
     #Generate names
     project_name = "BA Arena"
-    plan(tc, project_name)
-
-    #plan(tc, project_name)
-    #print(tc.assign_role(group_name=group_name, project_name=project_name, role='PROJECT_VIEWER'))
+    plan(tc, parameters.project_name)
+    jprint(tc.get_group_names(project_name))
+    print(tc.get_groups_id(project_name))

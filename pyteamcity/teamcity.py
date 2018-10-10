@@ -19,6 +19,7 @@ import xml.etree.ElementTree as ET
 from http import cookiejar  # Python 2: import cookielib as cookiejar
 import sys
 import logging
+logging.basicConfig(format = u'%(filename)s[LINE:%(lineno)d]# %(levelname)-8s [%(asctime)s]  %(message)s', level = logging.INFO)
 class BlockAll(cookiejar.CookiePolicy):
     return_ok = set_ok = domain_return_ok = path_return_ok = lambda self, *args, **kwargs: False
     netscape = True
@@ -490,8 +491,8 @@ class TeamCity:
                    'Accept': 'application/json'}
         response = self.session.post(url, json=data, headers=headers)
         if (response.status_code != 200):
-            logger.debug(response.text)
-            logger.error('Error create project "{}"'.format(name))
+            logger.debug(response.text.split('\n')[1])
+            logger.error('Error create project "{name}". {reason}'.format(name=name, reason=response.text.split('\n')[1]))
         else:
             logger.info('Project "{}" was created'.format(name))
         return response
@@ -694,7 +695,7 @@ class TeamCity:
         )
         if (response.status_code != 200):
             logger.debug(response.text)
-            logger.error('Error set parent group for {child_group}'.format(child_group=child_group))
+            logger.error('Error set parent group for {child_group}. {reason}'.format(child_group=child_group, reason=response.text.split('\n')[1]))
         return response
     @GET('userGroups/{child_group}/parent-groups')
     def get_parent_groups(self, child_group):
@@ -720,25 +721,29 @@ class TeamCity:
         response = self.session.post(url=url,  json=data, headers=headers)
         if(response.status_code != 200):
             logger.debug(response.text)
-            logger.error('Error create group {}'.format(name))
+            logger.error('Error create group {name}. {reason}'.format(name=name, reason=response.text.split('\n')[1]))
         return response
     def create_groups_for_project(self, project_name):
-        if(self.create_group(project_name).ok):
+        response = self.create_group(project_name)
+        if(response.ok):
             logger.info('Group "{}" was created'.format(project_name))
         else:
-            logger.error('Group "{}" was not created'.format(project_name))
+            pass
+            #logger.error('Group "{name}" was not created. {reason}'.format(name=project_name, reason=response.text.split('\n')[1]))
         for group in self._get_help_groups(project_name):
             if(self.create_group(group).ok):
                 logger.info('Group "{}" was created'.format(group))
             else:
-                logger.error('Group "{}" was not created'.format(group))
+                pass
+                #logger.error('Group "{name}" was not created. {reason}'.format(name=group, reason=response.text.split('\n')[1]))
     def set_parent_hierarchy(self, group_name):
         main_group_id = _create_group_id(group_name)
         for group in self._get_help_groups(group_name):
-            if(self.set_parent_group(_create_group_id(group), main_group_id).ok):
+            response = self.set_parent_group(_create_group_id(group), main_group_id)
+            if (response.ok):
                 logger.info('"{}" set parent for "{}"'.format(main_group_id, _create_group_id(group)))
             else:
-                logger.error('Can\'t set parent for "{}"'.format(_create_group_id(group)))
+                logger.error('Can\'t set parent for "{name}". {reason}'.format(_create_group_id(group), reason=response.text.split('\n')[1]))
         self.set_parent_group(main_group_id, self.all_users_group)
 
     def assign_role_by_id(self, group_id, project_id, role='PROJECT_VIEWER'):
@@ -754,7 +759,7 @@ class TeamCity:
         )
         if (response.status_code != 200):
             logger.debug(response.text)
-            logger.error('Error assign {role} for {project_id} to {group_id}'.format(role=role, project_id=project_id, group_id=group_id))
+            logger.error('Error assign {role} for {project_id} to {group_id}. {reason}'.format(role=role, project_id=project_id, group_id=group_id, reason=response.text.split('\n')[1]))
         else:
             logger.info('Assign {role} for {project_id} to {group_id}'.format(role=role, project_id=project_id, group_id=group_id))
         return response
