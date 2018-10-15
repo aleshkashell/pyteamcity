@@ -19,7 +19,7 @@ import xml.etree.ElementTree as ET
 from http import cookiejar  # Python 2: import cookielib as cookiejar
 import sys
 import logging
-#logging.basicConfig(format = u'%(filename)s[LINE:%(lineno)d]# %(levelname)-8s [%(asctime)s]  %(message)s', level = logging.INFO)
+logging.basicConfig(format = u'%(levelname)-8s %(message)s', level = logging.INFO)
 class BlockAll(cookiejar.CookiePolicy):
     return_ok = set_ok = domain_return_ok = path_return_ok = lambda self, *args, **kwargs: False
     netscape = True
