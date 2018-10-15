@@ -1,3 +1,6 @@
 requests
 bs4
 argparse
+git+https://github.com/aleshkashell/pyfreeipa
+git+https://github.com/aleshkashell/pyteamcity
+git+https://github.com/aleshkashell/pylineinfile
